@@ -24,11 +24,12 @@ public class TestRailHook {
 
     private static final Logger logger = LogManager.getLogger(TestRailHook.class);
     public static HashSet<String> failedCases = new HashSet<>();
-
+    
     // CE test plan details
-    public static String PROJECT_ID = PropertyUtils.getProperty("testrail.projectid");
-    public static String NEW_PLAN_NAME = PropertyUtils.getProperty("testrail.plan.name");
-    public static String BASE_PLAN_ID = PropertyUtils.getProperty("testrail.planid");
+    public static String PROJECT_ID = PropertyUtils.getProperty("testrail.project.id");
+    public static String NEW_PLAN_NAME = PropertyUtils.getProperty("testrail.new.plan.name");
+    public static String BASE_PLAN_ID = PropertyUtils.getProperty("testrail.baseplan.id");
+    public static String DESIRED_RUN_NAMES = PropertyUtils.getProperty("testrail.run.names");
 
     // IDs of runs of in the test plans
     private static List<Long> TEST_RUN_IDS = new ArrayList<>();
@@ -39,15 +40,6 @@ public class TestRailHook {
      * Before all: Create plan, if not already created and set test run ids
      * After all: mark status of cases as 'Failed' which were fail even once during execution.
      */
-
-    static {
-        try {
-            testrailHook();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void testrailHook() throws Exception {
         // After hook: Marks the cases as failed, if they were failed atleast once during execution
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -58,13 +50,12 @@ public class TestRailHook {
                     logger.info("Cases Marked !!!");
                 } catch (Exception exception) {
                     exception.printStackTrace();
-                    logger.debug(exception);
+                    logger.debug("---------------- TESTRAIL AFTER HOOK ERROR ----------------\n" + exception);
                 }
             }
         });
         // Before hook: Set IDs of child runs of the plan
-        List<Long> runIDs = getRunIDs(PROJECT_ID, NEW_PLAN_NAME, BASE_PLAN_ID);
-        TEST_RUN_IDS.addAll(runIDs);
+        TEST_RUN_IDS.addAll(getRunIDs(PROJECT_ID, NEW_PLAN_NAME, BASE_PLAN_ID, DESIRED_RUN_NAMES));
         logger.info("TEST_RUN_IDS --->>>" + TEST_RUN_IDS);
     }
 
@@ -74,7 +65,7 @@ public class TestRailHook {
      *
      * @param scenario: Current executed scenario
      */
-    @After(order = 0)
+//    @After(order = 0)
     public void afterScenario(Scenario scenario) {
         // Get passed or failed status of scenatio
         String status_id = scenario.getStatus().equals(Result.Type.PASSED) ? TEST_CASE_PASSED_STATUS : TEST_CASE_FAILED_STATUS;
